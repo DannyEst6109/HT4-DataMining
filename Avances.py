@@ -1,5 +1,6 @@
 # Importar librerias
 import pandas as pd
+from sklearn import tree
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
