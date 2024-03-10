@@ -1,10 +1,12 @@
 # Importar bibliotecas
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, plot_tree
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.linear_model import LinearRegression
-from sklearn.impute import SimpleImputer
-from sklearn.metrics import mean_squared_error
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import mean_squared_error, accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Cargar datos
 datos = pd.read_csv("./train.csv")
@@ -15,19 +17,28 @@ datos_encoded = pd.get_dummies(datos)
 # 1. Utilizar los mismos conjuntos de entrenamiento y prueba que para regresión lineal
 train, test = train_test_split(datos_encoded, test_size=0.3, random_state=123)
 
-# 2. Imputar valores faltantes (NaN) en el conjunto de entrenamiento
-imputer = SimpleImputer(strategy="mean")
-train_imputed = pd.DataFrame(imputer.fit_transform(train), columns=train.columns)
+# 2. Árbol de Regresión para predecir el precio de las casas usando todas las variables
+arbol_regresion = DecisionTreeRegressor()
+arbol_regresion.fit(train.drop(columns="SalePrice"), train["SalePrice"])
 
-# 3. Ajustar el modelo de regresión lineal
-fit_lm = LinearRegression().fit(train_imputed.drop(columns="SalePrice"), train_imputed["SalePrice"])
+# 3. Predecir y analizar el resultado
+predicciones = arbol_regresion.predict(test.drop(columns="SalePrice"))
+mse = mean_squared_error(test["SalePrice"], predicciones)
+print(f"MSE del árbol de regresión: {mse}")
 
-# 4. Imputar valores faltantes en el conjunto de prueba y predecir
-test_imputed = pd.DataFrame(imputer.transform(test), columns=test.columns)
-predictions_lm = fit_lm.predict(test_imputed.drop(columns="SalePrice"))
+# 4. Modelos adicionales cambiando la profundidad del árbol
+profundidades = [5, 10, 15]
+for profundidad in profundidades:
+    arbol = DecisionTreeRegressor(max_depth=profundidad)
+    arbol.fit(train.drop(columns="SalePrice"), train["SalePrice"])
+    predicciones = arbol.predict(test.drop(columns="SalePrice"))
+    mse = mean_squared_error(test["SalePrice"], predicciones)
+    print(f"MSE para profundidad {profundidad}: {mse}")
 
-# 5. Evaluar el rendimiento del modelo
-mse_lm = mean_squared_error(test_imputed["SalePrice"], predictions_lm)
+# 5. Comparar con modelo de regresión lineal
+fit_lm = LinearRegression().fit(train.drop(columns="SalePrice"), train["SalePrice"])
+predictions_lm = fit_lm.predict(test.drop(columns="SalePrice"))
+mse_lm = mean_squared_error(test["SalePrice"], predictions_lm)
 print(f"MSE del modelo de regresión lineal: {mse_lm}")
 
 # 6. Crear variable respuesta para clasificar las casas
