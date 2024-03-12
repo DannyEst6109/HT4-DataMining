@@ -4,50 +4,59 @@ from sklearn.tree import DecisionTreeRegressor, plot_tree
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 
-# Carga de datos
-df = pd.read_csv('train.csv')
+def run_decision_tree_analysis(visualize=False):
 
-# Aplicar codificación one-hot a variables categóricas
-df = pd.get_dummies(df)
+  # Carga de datos
+  df = pd.read_csv('train.csv')
 
-# Separar las características (X) y la variable objetivo (y)
-X = df.drop('SalePrice', axis=1)
-y = df['SalePrice']
+  # Aplicar codificación one-hot a variables categóricas
+  df = pd.get_dummies(df)
 
-# Dividir los datos en conjuntos de entrenamiento y prueba
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+  # Separar las características (X) y la variable objetivo (y)
+  X = df.drop('SalePrice', axis=1)
+  y = df['SalePrice']
 
-# Lista para almacenar los resultados de cada profundidad
-resultados = []
+  # Dividir los datos en conjuntos de entrenamiento y prueba
+  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Profundidades a probar
-profundidades = [1, 2, 5, 10, None]
+  # Lista para almacenar los resultados de cada profundidad
+  resultados = []
 
-for profundidad in profundidades:
-    # Entrenar modelo de regresión con la profundidad actual
-    modelo = DecisionTreeRegressor(max_depth=profundidad, random_state=42)
-    modelo.fit(X_train, y_train)
-    
-    # Evaluar el modelo
-    predicciones = modelo.predict(X_test)
-    mse = mean_squared_error(y_test, predicciones)
-    
-    # Guardar los resultados (profundidad, MSE)
-    resultados.append((profundidad, mse))
+  # Profundidades a probar
+  profundidades = [1, 2, 5, 10, None]
 
-# Imprimir los resultados y encontrar el modelo con menor MSE
-mejor_resultado = min(resultados, key=lambda item: item[1])
-mejor_profundidad, mejor_mse = mejor_resultado
-print(f"La mejor profundidad es {mejor_profundidad} con un MSE de {mejor_mse}")
+  for profundidad in profundidades:
+      # Entrenar modelo de regresión con la profundidad actual
+      modelo = DecisionTreeRegressor(max_depth=profundidad, random_state=42)
+      modelo.fit(X_train, y_train)
+      
+      # Evaluar el modelo
+      predicciones = modelo.predict(X_test)
+      mse = mean_squared_error(y_test, predicciones)
+      
+      # Guardar los resultados (profundidad, MSE)
+      resultados.append((profundidad, mse))
 
-# La mejor profundidad es aquella con el menor MSE
-# Reentrenar el modelo con la mejor profundidad encontrada
-mejor_modelo = DecisionTreeRegressor(max_depth=mejor_profundidad, random_state=42)
-mejor_modelo.fit(X_train, y_train)
+  # Imprimir los resultados y encontrar el modelo con menor MSE
+  mejor_resultado = min(resultados, key=lambda item: item[1])
+  mejor_profundidad, mejor_mse = mejor_resultado
+  print(f"\n\nLa mejor profundidad es {mejor_profundidad} con un MSE de {mejor_mse}")
 
-# Visualizar el mejor árbol de decisión
-# Modifica el valor de max_depth aquí si deseas ver más niveles del árbol
-profundidad_visualizacion = 2
-plt.figure(figsize=(30, 20))
-plot_tree(mejor_modelo, filled=True, feature_names=X.columns, fontsize=10, max_depth=profundidad_visualizacion)
-plt.show()
+  # La mejor profundidad es aquella con el menor MSE
+  # Reentrenar el modelo con la mejor profundidad encontrada
+  mejor_modelo = DecisionTreeRegressor(max_depth=mejor_profundidad, random_state=42)
+  mejor_modelo.fit(X_train, y_train)
+
+  if visualize:
+    # Visualizar el mejor árbol de decisión
+    # Modifica el valor de max_depth aquí si deseas ver más niveles del árbol
+    profundidad_visualizacion = 2
+    plt.figure(figsize=(30, 20))
+    plot_tree(mejor_modelo, filled=True, feature_names=X.columns, fontsize=10, max_depth=profundidad_visualizacion)
+    plt.show()
+
+  return mejor_mse, mejor_modelo
+
+# Ejecutar análisis de árbol de decisión
+if __name__ == "__main__":
+  run_decision_tree_analysis(visualize=True)
