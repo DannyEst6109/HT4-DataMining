@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeRegressor, plot_tree
+from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 
 # Carga de datos
@@ -24,27 +24,30 @@ resultados = []
 profundidades = [1, 2, 5, 10, None]
 
 for profundidad in profundidades:
-    # Entrenar modelo con la profundidad actual
-    modelo = DecisionTreeClassifier(max_depth=profundidad, random_state=42)
+    # Entrenar modelo de regresión con la profundidad actual
+    modelo = DecisionTreeRegressor(max_depth=profundidad, random_state=42)
     modelo.fit(X_train, y_train)
     
     # Evaluar el modelo
     predicciones = modelo.predict(X_test)
-    score = accuracy_score(y_test, predicciones)
+    mse = mean_squared_error(y_test, predicciones)
     
-    # Guardar los resultados
-    resultados.append((profundidad, score))
+    # Guardar los resultados (profundidad, MSE)
+    resultados.append((profundidad, mse))
 
-# Imprimir los resultados
-for profundidad, score in resultados:
-    print(f"Profundidad: {profundidad}, Precisión: {score}")
+# Imprimir los resultados y encontrar el modelo con menor MSE
+mejor_resultado = min(resultados, key=lambda item: item[1])
+mejor_profundidad, mejor_mse = mejor_resultado
+print(f"La mejor profundidad es {mejor_profundidad} con un MSE de {mejor_mse}")
 
-# Encontrar la mejor profundidad y reentrenar el modelo
-mejor_profundidad = max(resultados, key=lambda item: item[1])[0]
-mejor_modelo = DecisionTreeClassifier(max_depth=mejor_profundidad, random_state=42)
+# La mejor profundidad es aquella con el menor MSE
+# Reentrenar el modelo con la mejor profundidad encontrada
+mejor_modelo = DecisionTreeRegressor(max_depth=mejor_profundidad, random_state=42)
 mejor_modelo.fit(X_train, y_train)
 
-# Visualizar solo las primeras capas del mejor árbol de decisión
+# Visualizar el mejor árbol de decisión
+# Modifica el valor de max_depth aquí si deseas ver más niveles del árbol
+profundidad_visualizacion = 2
 plt.figure(figsize=(30, 20))
-plot_tree(mejor_modelo, filled=True, feature_names=X.columns, fontsize=10, max_depth=2)
+plot_tree(mejor_modelo, filled=True, feature_names=X.columns, fontsize=10, max_depth=profundidad_visualizacion)
 plt.show()
