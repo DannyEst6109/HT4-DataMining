@@ -1,0 +1,226 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+librerias
+```{r}
+library(rpart)
+library(rpart.plot)
+library(dplyr) 
+library(fpc) 
+library(cluster) 
+library("ggpubr") 
+library(mclust)
+library(caret)
+library(tree)
+library(randomForest)
+library(plyr)
+library("stats")
+library("datasets")
+library("prediction")
+library(tidyverse)
+```
+
+
+
+### 1. Use los mismos conjuntos de entrenamiento y prueba que usó para los árboles de decisión en la hoja de trabajo anterior. 
+```{r}
+datos = read.csv("./train.csv")
+test<- read.csv("./test.csv", stringsAsFactors = FALSE)
+```
+
+Lo Realizado anteriormente:
+
+
+
+Inciso 4
+```{r}
+set_entrenamiento <- sample_frac(datos, .7)
+set_prueba <-setdiff(datos, set_entrenamiento)
+
+
+drop <- c("LotFrontage", "Alley", "MasVnrType", "MasVnrArea", "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "BsmtFinType2", "Electrical", "FireplaceQu", "GarageType", "GarageYrBlt", "GarageFinish", "GarageQual", "GarageCond", "PoolQC", "Fence", "MiscFeature")
+set_entrenamiento <- set_entrenamiento[, !(names(set_entrenamiento) %in% drop)]
+set_prueba <- set_prueba[, !(names(set_prueba) %in% drop)]
+```
+
+### 2. Elabore un árbol de regresión para predecir el precio de las casas usando todas las variables.
+
+
+
+```{r}
+arbol_3 <- rpart(SalePrice ~ ., data = set_entrenamiento)
+```
+
+```{r}
+prp(arbol_3, main="Arbol de Regresion", nn=TRUE, fallen.leaves = TRUE, shadow.col = "green", branch.lty = 3, branch = .5, faclen = 0, trace = 1, split.cex = 0.8, split.box.col = "lightblue", split.border.col = "blue", split.round = 0.5)
+```
+
+
+--modelo del arbol de decision
+```{r}
+#arbolModelo1 <- rpart(SalePrice~.,set_prueba,method = "class")
+#rpart.plot(arbolModelo1)
+```
+
+
+### 3. Úselo para predecir y analice el resultado. ¿Qué tal lo hizo? 
+```{r}
+predicciones <- predict(arbol_3, data = set_prueba)
+
+mse <- mean((predicciones - set_prueba$SalePrice)**2)
+mse
+
+```
+
+
+### 4. Haga, al menos, 3 modelos más cambiando el parámetro de la profundidad del árbol. ¿Cuál es el mejor modelo para predecir el precio de las casas? 
+```{r}
+arbol_4 <- rpart(SalePrice ~ ., data = set_entrenamiento, control = rpart.control(maxdepth = 5))
+predicciones2 <- predict(arbol_4, data = set_prueba)
+
+mse2 <- mean((predicciones2 - set_prueba$SalePrice)**2)
+mse2
+
+```
+
+```{r}
+arbol_5 <- rpart(SalePrice ~ ., data = set_entrenamiento, control = rpart.control(maxdepth = 10))
+predicciones3 <- predict(arbol_5, data = set_prueba)
+
+mse3 <- mean((predicciones3 - set_prueba$SalePrice)**2)
+mse3
+
+```
+
+```{r}
+arbol_6 <- rpart(SalePrice ~ ., data = set_entrenamiento, control = rpart.control(maxdepth = 15))
+predicciones4 <- predict(arbol_6, data = set_prueba)
+
+mse4 <- mean((predicciones4 - set_prueba$SalePrice)**2)
+mse4
+
+
+```
+
+```{r}
+arbol_6 <- rpart(SalePrice ~ ., data = set_entrenamiento, control = rpart.control(maxdepth = 3))
+predicciones4 <- predict(arbol_6, data = set_prueba)
+
+mse4 <- mean((predicciones4 - set_prueba$SalePrice)**2)
+mse4
+
+
+```
+
+
+### 5. Compare los resultados con el modelo de regresión lineal de la hoja anterior, ¿cuál lo hizo mejor? 
+
+
+```{r}
+porciento <- 70/100
+datos$clasificacion <- ifelse(datos$SalePrice <= 251000, "Economicas", ifelse(datos$SalePrice <= 538000, "Intermedias", ifelse(datos$SalePrice <= 755000, "Caras")))
+
+datos$y <- as.numeric(factor(datos$clasificacion))
+datosCC <- datos[,c(2,4,18,19,20,21,27,35,37,38,39,44,45,46,47,48,49,50,51,52,53,55,57,60,62,63,67,68,69,70,71,72,76,77,78,81,83)]
+datosCC <- datosCC[,colSums(is.na(datosCC))==0]
+set.seed(123)
+trainRowsNumber<-sample(nrow(datosCC),porciento*nrow(datosCC))
+train<-datosCC[trainRowsNumber,]
+test<-datosCC[-trainRowsNumber,]
+
+fitLM<-lm(SalePrice~., data = train) 
+summary(fitLM)
+
+```
+
+### 6. Dependiendo del análisis exploratorio elaborado cree una variable respuesta que le permita clasificar las casas en Económicas, Intermedias o Caras. Los límites de estas clases deben tener un fundamento en la distribución de los datos de precios, y estar bien explicados  
+```{r}
+datos$clasificacion <- ifelse(datos$SalePrice > 290000, "Caras", ifelse(datos$SalePrice>170000, "Intemedia", "Economicas"))
+table(datos$clasificacion)
+```
+
+```{r}
+set_entrenamiento <- sample_frac(datos, .7)
+set_prueba <-setdiff(datos, set_entrenamiento)
+
+
+drop <- c("LotFrontage", "Alley", "MasVnrType", "MasVnrArea", "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "BsmtFinType2", "Electrical", "FireplaceQu", "GarageType", "GarageYrBlt", "GarageFinish", "GarageQual", "GarageCond", "PoolQC", "Fence", "MiscFeature")
+set_entrenamiento <- set_entrenamiento[, !(names(set_entrenamiento) %in% drop)]
+set_prueba <- set_prueba[, !(names(set_prueba) %in% drop)]
+```
+
+
+### 7. Elabore  un  árbol  de  clasificación  utilizando  la  variable  respuesta que  creó  en  el  punto anterior.  Explique los resultados a los que llega. Muestre el modelo gráficamente. Recuerde que la nueva variable respuesta es categórica, pero se generó a partir de los precios de las casas, no incluya el precio de venta para entrenar el modelo. 
+```{r}
+arbol_4 <- rpart(formula = clasificacion ~ ., data = set_entrenamiento)
+arbol_4
+```
+
+```{r}
+rpart.plot(arbol_4)
+```
+
+### 8. Utilice el modelo con el conjunto de prueba y determine la eficiencia del algoritmo para clasificar.
+
+```{r}
+
+set_prueba <- set_prueba[, !(names(set_prueba) %in% drop)]
+arbol_5 <- rpart(SalePrice ~ ., data = set_prueba)
+```
+
+```{r}
+
+rpart.plot(arbol_5)
+```
+
+```{r}
+predicciones <- predict(arbol_5, newdata = set_prueba)
+error <- abs(predicciones - set_prueba$SalePrice)
+eficiencia <- 1 - mean(error / set_prueba$SalePrice)
+eficiencia
+
+```
+
+
+
+### 9. Haga un análisis de la eficiencia del algoritmo usando una matriz de confusión para el árbol de clasificación. Tenga en cuenta la efectividad, donde el algoritmo se equivocó más, donde se equivocó menos y la importancia que tienen los errores. 
+
+```{r include=FALSE}
+estado <- c('Estado')
+datos$Estado <- estado
+
+
+datos <- within(datos, Estado[SalePrice <= 129975] <- 'Economica')
+datos$Estado[(datos$SalePrice > 129975 & datos$SalePrice <= 163000)] <- "Intermedio"
+datos$Estado[datos$SalePrice > 163000] <- "Cara"
+
+
+porciento <- 70/100
+# Variables numericas
+datos <- datos[, c("LotFrontage", "LotArea", "GrLivArea", "YearBuilt", "BsmtUnfSF", "TotalBsmtSF", "X1stFlrSF", "GarageYrBlt", "GarageArea", "YearRemodAdd", "SalePrice", "Estado")]
+
+# Variables  Grupo
+datosFiltertree <- datos[, c("LotFrontage", "LotArea", "GrLivArea", "YearBuilt", "BsmtUnfSF", "TotalBsmtSF", "X1stFlrSF", "GarageYrBlt", "GarageArea", "YearRemodAdd", "Estado")]
+
+set.seed(123)
+trainRowsNumber <- sample(1:nrow(datosFiltertree), porciento * nrow(datosFiltertree))
+train <- datosFiltertree[trainRowsNumber, ]
+test <- datosFiltertree[-trainRowsNumber, ]
+train <- na.omit(train)
+train$Estado <- factor(train$Estado)
+modeloRF1 <- randomForest(train$Estado ~ ., train)
+prediccionRF1 <- predict(modeloRF1, newdata = test)
+testCompleto <- test
+
+testCompleto$predRF <- prediccionRF1
+testCompleto$predRF <- (testCompleto$predRF)
+cfmRandomForest <- table(testCompleto$predRF, testCompleto$Estado)
+cfmRandomForest <- confusionMatrix(table(testCompleto$predRF, testCompleto$Estado))
+
+```
+
+```{r include=TRUE}
+cfm <- confusionMatrix(table(testCompleto$predRF, testCompleto$Estado))
+cfm
+```
